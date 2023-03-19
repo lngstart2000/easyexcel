@@ -17,12 +17,10 @@ import java.util.Date;
 @EqualsAndHashCode
 @ToString
 public class DemoData {
-    @ExcelProperty(index = 1)
+    @ExcelProperty("字符串标题")
     private String string;
-
-    @ExcelProperty(index = 2)
+    @ExcelProperty("日期标题")
     private Date date;
-
-    @ExcelProperty(index = 3)
+    @ExcelProperty("数字标题")
     private Double doubleData;
 }
