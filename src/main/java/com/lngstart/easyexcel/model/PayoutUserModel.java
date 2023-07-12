@@ -30,6 +30,9 @@ public class PayoutUserModel {
     @ExcelProperty("小额账号公司")
     private String companyName;
 
+    @ExcelProperty("oms冲突账号公司")
+    private String omsCompanyName;
+
     /**
      * oms冲突用户名极其原因
      */

@@ -60,6 +60,7 @@ public class UserUpdateWork {
 
         List<String> accountList = omsUserModelList.stream().map(OmsUserModel::getAccount).collect(Collectors.toList());
         Map<String, List<OmsUserModel>> omsPhoneMap = omsUserModelList.stream().filter(model -> StrUtil.isNotEmpty(model.getPhone())).collect(Collectors.groupingBy(OmsUserModel::getPhone));
+        Map<String, Long> userMap = omsUserModelList.stream().collect(Collectors.toMap(OmsUserModel::getAccount, model -> model.getCompanyId()));
 
         List<PayoutUserModel> resultList = new ArrayList<>();
         for(PayoutUserModel model : payoutUserModelList) {
@@ -70,6 +71,11 @@ public class UserUpdateWork {
             List<OmsUserReasonVO> voList = new ArrayList<>();
             if(accountList.contains(account)) {
                 voList.add(new OmsUserReasonVO(account, "该账号和oms账号account冲突", ""));
+                Long company = userMap.get(account);
+                if(company != null) {
+                    String companyName = companyMap.getOrDefault(company, "");
+                    result.setOmsCompanyName(companyName);
+                }
             }
             if(omsPhoneMap.containsKey(account)) {
                 List<OmsUserModel> omsUserModels = omsPhoneMap.get(account);
@@ -80,6 +86,11 @@ public class UserUpdateWork {
                             desc = "公司id不同";
                         }
                         voList.add(new OmsUserReasonVO(userModel.getAccount(), "该账号和oms账号电话号码冲突", desc));
+                        Long company = userMap.get(userModel.getAccount());
+                        if(company != null) {
+                            String companyName = companyMap.getOrDefault(company, "");
+                            result.setOmsCompanyName(companyName);
+                        }
                     }
                 }
             }
