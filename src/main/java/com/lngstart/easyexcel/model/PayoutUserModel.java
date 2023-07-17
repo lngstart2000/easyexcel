@@ -15,6 +15,9 @@ public class PayoutUserModel {
     @ExcelProperty("id")
     private Long id;
 
+    @ExcelProperty("oms_id")
+    private Long omsId;
+
     @ExcelProperty("account")
     private String account;
 
@@ -26,6 +29,9 @@ public class PayoutUserModel {
 
     @ExcelProperty("username")
     private String username;
+
+    @ExcelProperty("sign_name_url")
+    private String signNameUrl;
 
     @ExcelProperty("小额账号公司")
     private String companyName;

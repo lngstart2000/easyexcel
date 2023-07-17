@@ -4,11 +4,11 @@ import cn.hutool.core.util.StrUtil;
 import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.read.listener.PageReadListener;
 import com.alibaba.fastjson.JSONObject;
-import com.lngstart.easyexcel.dto.FormData;
 import com.lngstart.easyexcel.dto.OmsUserReasonVO;
 import com.lngstart.easyexcel.model.CompanyModel;
 import com.lngstart.easyexcel.model.OmsUserModel;
 import com.lngstart.easyexcel.model.PayoutUserModel;
+import com.lngstart.easyexcel.model.UserRelation;
 import org.springframework.beans.BeanUtils;
 import org.springframework.util.CollectionUtils;
 
@@ -41,6 +41,7 @@ public class UserUpdateWork {
         String omsUserPath = basePath + "//payout_user//oms_user.xlsx";
         String resultPath = basePath + "//payout_user//result.xlsx";
         String companyPath = basePath + "//payout_user//mishu_public_tbl_company.xlsx";
+        String userRelationPath = basePath + "//payout_user//relation.xlsx";
 
         List<PayoutUserModel> payoutUserModelList = new ArrayList<>();
         EasyExcel.read(payOutPath, PayoutUserModel.class, new PageReadListener<PayoutUserModel>(dataList -> {
@@ -60,7 +61,7 @@ public class UserUpdateWork {
 
         List<String> accountList = omsUserModelList.stream().map(OmsUserModel::getAccount).collect(Collectors.toList());
         Map<String, List<OmsUserModel>> omsPhoneMap = omsUserModelList.stream().filter(model -> StrUtil.isNotEmpty(model.getPhone())).collect(Collectors.groupingBy(OmsUserModel::getPhone));
-        Map<String, Long> userMap = omsUserModelList.stream().collect(Collectors.toMap(OmsUserModel::getAccount, model -> model.getCompanyId()));
+        Map<String, OmsUserModel> userMap = omsUserModelList.stream().collect(Collectors.toMap(OmsUserModel::getAccount, model -> model));
 
         List<PayoutUserModel> resultList = new ArrayList<>();
         for(PayoutUserModel model : payoutUserModelList) {
@@ -71,11 +72,14 @@ public class UserUpdateWork {
             List<OmsUserReasonVO> voList = new ArrayList<>();
             if(accountList.contains(account)) {
                 voList.add(new OmsUserReasonVO(account, "该账号和oms账号account冲突", ""));
-                Long company = userMap.get(account);
+                OmsUserModel userModel = userMap.get(account);
+                Long id = userModel.getId();
+                Long company = userModel.getCompanyId();
                 if(company != null) {
                     String companyName = companyMap.getOrDefault(company, "");
                     result.setOmsCompanyName(companyName);
                 }
+                result.setOmsId(id);
             }
             if(omsPhoneMap.containsKey(account)) {
                 List<OmsUserModel> omsUserModels = omsPhoneMap.get(account);
@@ -86,7 +90,10 @@ public class UserUpdateWork {
                             desc = "公司id不同";
                         }
                         voList.add(new OmsUserReasonVO(userModel.getAccount(), "该账号和oms账号电话号码冲突", desc));
-                        Long company = userMap.get(userModel.getAccount());
+                        OmsUserModel userModel1 = userMap.get(userModel.getAccount());
+                        Long company = userModel1.getCompanyId();
+                        Long id = userModel1.getId();
+                        result.setOmsId(id);
                         if(company != null) {
                             String companyName = companyMap.getOrDefault(company, "");
                             result.setOmsCompanyName(companyName);
@@ -103,6 +110,42 @@ public class UserUpdateWork {
             }
         }
 
-        EasyExcel.write(resultPath, PayoutUserModel.class).sheet("数据").doWrite(resultList);
+//        EasyExcel.write(resultPath, PayoutUserModel.class).sheet("数据").doWrite(resultList);
+
+        List<UserRelation> userRelations = new ArrayList<>();
+        for(PayoutUserModel model : resultList) {
+            UserRelation relation = new UserRelation();
+            Long id = model.getId();
+            Long omsId = model.getOmsId();
+            relation.setPayoutUser(id);
+            relation.setOmsUser(omsId);
+            relation.setIsOms("是");
+            relation.setDelete(model.getDelete());
+            relation.setSignNameUrl(model.getSignNameUrl());
+            userRelations.add(relation);
+        }
+
+        Long startId = 202307140000L;
+        List<Long> isOmsList = resultList.stream().map(PayoutUserModel::getId).collect(Collectors.toList());
+        for(PayoutUserModel user : payoutUserModelList) {
+            if(isOmsList.contains(user.getId())) continue;
+
+            UserRelation relation = new UserRelation();
+            relation.setSignNameUrl(user.getSignNameUrl());
+            relation.setPayoutUser(user.getId());
+            relation.setOmsUser(startId);
+            relation.setAccount(user.getAccount());
+            relation.setPassword("14e1b600b1fd579f47433b88e8d85291");
+            relation.setCompanyId(user.getCompanyId());
+            relation.setPhone(user.getAccount());
+            relation.setName(user.getUsername());
+            relation.setDelete(user.getDelete());
+            relation.setIsOms("否");
+            startId ++;
+            userRelations.add(relation);
+        }
+
+        EasyExcel.write(userRelationPath, UserRelation.class).sheet("数据").doWrite(userRelations);
+
     }
 }
