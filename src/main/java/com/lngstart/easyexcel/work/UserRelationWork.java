@@ -21,6 +21,8 @@ import java.util.stream.Collectors;
 public class UserRelationWork {
 
     public static String basePath = "";
+    public static String filePath = "//payout_user_test";
+    public static Long payoutRole = 44L;
     static {
         FileSystemView fileSystemView = FileSystemView.getFileSystemView();
         File homeDirectory = fileSystemView.getHomeDirectory();
@@ -32,8 +34,8 @@ public class UserRelationWork {
      * @param args
      */
     public static void main(String[] args) throws Exception{
-        String userRelationPath = basePath + "//payout_user//relation.xlsx";
-        String resultPath = basePath + "//payout_user//执行sql.md";
+        String userRelationPath = basePath + filePath + "//relation.xlsx";
+        String resultPath = basePath + filePath + "//执行sql.md";
 
         List<UserRelation> userRelationList = new ArrayList<>();
         EasyExcel.read(userRelationPath, UserRelation.class, new PageReadListener<UserRelation>(dataList -> {
@@ -60,9 +62,9 @@ public class UserRelationWork {
         // 用户添加添加小额权限
         List<String> omsUserSqlList = new ArrayList<>();
         String sqlTemplate = "insert into public.tbl_user_permission (user_id, permission_id) values ";
-        String template = "(%d, (select id from public.tbl_permission where name = 'auth/case/payout'))";
+        String template = "(%d, %d)";
         for(UserRelation user : userRelationList) {
-            String sql = String.format(template, user.getOmsUser());
+            String sql = String.format(template, user.getOmsUser(), payoutRole);
             omsUserSqlList.add(sql);
         }
         String omsUserSql = omsUserSqlList.stream().collect(Collectors.joining(",\n"));
@@ -73,7 +75,7 @@ public class UserRelationWork {
 
         // 兼容用户协议书sql
         String signSql = "insert into mishu_quick_payout.tbl_user_attribute (user_id, sign_name_url) values ";
-        String signSqlTemplate = "(%d, %s)";
+        String signSqlTemplate = "(%d, '%s')";
         List<String> signSqlList = new ArrayList<>();
         for(UserRelation user : userRelationList) {
             String signNameUrl = user.getSignNameUrl();

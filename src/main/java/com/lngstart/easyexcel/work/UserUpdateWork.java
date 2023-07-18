@@ -9,6 +9,7 @@ import com.lngstart.easyexcel.model.CompanyModel;
 import com.lngstart.easyexcel.model.OmsUserModel;
 import com.lngstart.easyexcel.model.PayoutUserModel;
 import com.lngstart.easyexcel.model.UserRelation;
+import org.apache.catalina.User;
 import org.springframework.beans.BeanUtils;
 import org.springframework.util.CollectionUtils;
 
@@ -26,6 +27,7 @@ import java.util.stream.Collectors;
 public class UserUpdateWork {
 
     public static String basePath = "";
+    public static String filePath = "//payout_user_test";
     static {
         FileSystemView fileSystemView = FileSystemView.getFileSystemView();
         File homeDirectory = fileSystemView.getHomeDirectory();
@@ -37,11 +39,11 @@ public class UserUpdateWork {
      * @param args
      */
     public static void main(String[] args) throws Exception {
-        String payOutPath = basePath + "//payout_user//payout_user.xlsx";
-        String omsUserPath = basePath + "//payout_user//oms_user.xlsx";
-        String resultPath = basePath + "//payout_user//result.xlsx";
-        String companyPath = basePath + "//payout_user//mishu_public_tbl_company.xlsx";
-        String userRelationPath = basePath + "//payout_user//relation.xlsx";
+        String payOutPath = basePath + filePath + "//payout_user.xlsx";
+        String omsUserPath = basePath + filePath + "//oms_user.xlsx";
+        String resultPath = basePath + filePath + "//result.xlsx";
+        String companyPath = basePath + filePath + "//mishu_public_tbl_company.xlsx";
+        String userRelationPath = basePath + filePath + "//relation.xlsx";
 
         List<PayoutUserModel> payoutUserModelList = new ArrayList<>();
         EasyExcel.read(payOutPath, PayoutUserModel.class, new PageReadListener<PayoutUserModel>(dataList -> {
@@ -113,7 +115,14 @@ public class UserUpdateWork {
 //        EasyExcel.write(resultPath, PayoutUserModel.class).sheet("数据").doWrite(resultList);
 
         List<UserRelation> userRelations = new ArrayList<>();
+        PayoutUserModel adminUser = null;
         for(PayoutUserModel model : resultList) {
+            // 去除小额的admin账号
+            String account = model.getAccount();
+            if("admin".equals(account)) {
+                adminUser = model;
+                continue;
+            }
             UserRelation relation = new UserRelation();
             Long id = model.getId();
             Long omsId = model.getOmsId();
@@ -144,6 +153,21 @@ public class UserUpdateWork {
             startId ++;
             userRelations.add(relation);
         }
+
+        // 小额admin账号给建一个新的
+        UserRelation relation = new UserRelation();
+        relation.setSignNameUrl(adminUser.getSignNameUrl());
+        relation.setPayoutUser(adminUser.getId());
+        relation.setOmsUser(startId);
+        relation.setAccount("payout_admin");
+        relation.setPassword("14e1b600b1fd579f47433b88e8d85291");
+        relation.setCompanyId(adminUser.getCompanyId());
+        relation.setPhone("");
+        relation.setName("payout_admin");
+        relation.setDelete(adminUser.getDelete());
+        relation.setIsOms("否");
+        startId ++;
+        userRelations.add(relation);
 
         EasyExcel.write(userRelationPath, UserRelation.class).sheet("数据").doWrite(userRelations);
 
