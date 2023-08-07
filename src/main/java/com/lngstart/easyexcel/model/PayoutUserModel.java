@@ -21,6 +21,9 @@ public class PayoutUserModel {
     @ExcelProperty("account")
     private String account;
 
+    @ExcelProperty("password")
+    private String password;
+
     @ExcelProperty("company_id")
     private Long companyId;
 

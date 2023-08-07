@@ -9,7 +9,7 @@ import com.lngstart.easyexcel.model.CompanyModel;
 import com.lngstart.easyexcel.model.OmsUserModel;
 import com.lngstart.easyexcel.model.PayoutUserModel;
 import com.lngstart.easyexcel.model.UserRelation;
-import org.apache.catalina.User;
+import com.lngstart.easyexcel.utils.EncryptUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.util.CollectionUtils;
 
@@ -139,12 +139,16 @@ public class UserUpdateWork {
         for(PayoutUserModel user : payoutUserModelList) {
             if(isOmsList.contains(user.getId())) continue;
 
+            // 处理小额密码问题
+            String password = user.getPassword();
+            String omsPassword = EncryptUtils.encryptPassword(password);
+
             UserRelation relation = new UserRelation();
             relation.setSignNameUrl(user.getSignNameUrl());
             relation.setPayoutUser(user.getId());
             relation.setOmsUser(startId);
             relation.setAccount(user.getAccount());
-            relation.setPassword("14e1b600b1fd579f47433b88e8d85291");
+            relation.setPassword(omsPassword);
             relation.setCompanyId(user.getCompanyId());
             relation.setPhone(user.getAccount());
             relation.setName(user.getUsername());
@@ -156,11 +160,14 @@ public class UserUpdateWork {
 
         // 小额admin账号给建一个新的
         UserRelation relation = new UserRelation();
+        // 处理小额密码问题
+        String password = adminUser.getPassword();
+        String omsPassword = EncryptUtils.encryptPassword(password);
         relation.setSignNameUrl(adminUser.getSignNameUrl());
         relation.setPayoutUser(adminUser.getId());
         relation.setOmsUser(startId);
         relation.setAccount("payout_admin");
-        relation.setPassword("14e1b600b1fd579f47433b88e8d85291");
+        relation.setPassword(omsPassword);
         relation.setCompanyId(adminUser.getCompanyId());
         relation.setPhone("");
         relation.setName("payout_admin");
